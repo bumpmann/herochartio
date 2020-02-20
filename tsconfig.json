@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+        "module": "commonjs",
+        "target": "ESNext",
+        "noImplicitAny": true,
+        "strictNullChecks": true,
+        "declaration": true,
+        "moduleResolution": "node",
+        "sourceMap": true,
+        "outDir": "dist",
+        "typeRoots" : ["./node_modules/@types", "./typings"]
+    },
+    "include": [
+        "src/**/*"
+    ]
+}
