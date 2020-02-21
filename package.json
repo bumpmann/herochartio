@@ -1,6 +1,6 @@
 {
   "name": "herochartio",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "chart parser and serializer from clone hero",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,6 +17,7 @@
   },
   "repository": "git://github.com/bumpmann/herochartio.git",
   "license": "MIT",
+  "keywords": ["clone-hero", "clonehero", "chart"],
   "dependencies": {
     "fs-extra": "8.1.0"
   },
