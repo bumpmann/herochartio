@@ -17,7 +17,11 @@
   },
   "repository": "git://github.com/bumpmann/herochartio.git",
   "license": "MIT",
-  "keywords": ["clone-hero", "clonehero", "chart"],
+  "keywords": [
+    "clone-hero",
+    "clonehero",
+    "chart"
+  ],
   "dependencies": {
     "fs-extra": "8.1.0"
   },

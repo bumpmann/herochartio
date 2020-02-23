@@ -39,6 +39,11 @@ export class Chart {
         return Object.fromEntries(entries);
     }
 
+    convertTrackResolution<T>(track: ChartTrack<T>, resolution: number): ChartTrack<T>
+    {
+        return Object.fromEntries(Object.entries(track).map(ent => [Math.round(parseInt(ent[0]) * resolution / this.Song.Resolution), ent[1]]));
+    }
+
     filterPositions(callbackfn: (pos: number) => boolean): Chart
     {
         let newChart = new Chart();
@@ -67,6 +72,17 @@ export class Chart {
         newChart.Events = this.concatTrack(this.Events, chart.Events);
         newChart.ExpertSingle = this.concatTrack(this.ExpertSingle, chart.ExpertSingle);
         return newChart;
+    }
+
+    convertResolution(resolution: number): void
+    {
+        if (this.Song.Resolution == resolution)
+            return;
+
+        this.SyncTrack = this.convertTrackResolution(this.SyncTrack, resolution);
+        this.Events = this.convertTrackResolution(this.Events, resolution);
+        this.ExpertSingle = this.convertTrackResolution(this.ExpertSingle, resolution);
+        this.Song.Resolution = resolution;
     }
 
     bpsAt(position: number): number
@@ -124,23 +140,22 @@ export class Chart {
         for (let k in this.SyncTrack) {
             for (let ev of this.SyncTrack[k]) {
                 let ts = parseInt(k);
-                if (ts > position)
-                    ts = position;
+                if (ts >= position)
+                    break;
                 elapsed += (ts - lastts) * 60000 / bps / this.Song.Resolution;
-                if (ts == position)
-                    return elapsed;
                 if (ev.type == "B")
                     bps = ev.value;
                 lastts = ts;
             }
         }
+        elapsed += (position - lastts) * 60000 / bps / this.Song.Resolution;
         return elapsed;
     }
 
     findSectionPosition(name: string): number {
         for (let k in this.Events) {
             for (let ev of this.Events[k]) {
-                if (ev.name.toLowerCase() == "section " + name.toLowerCase())
+                if (ev.name.toLowerCase().replace(/_/g, ' ') == "section " + name.toLowerCase().replace(/_/g, ' '))
                     return parseInt(k);
             }
         }
