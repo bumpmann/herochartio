@@ -1,6 +1,6 @@
 {
   "name": "herochartio",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "chart parser and serializer from clone hero",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,7 +23,8 @@
     "chart"
   ],
   "dependencies": {
-    "fs-extra": "8.1.0"
+    "fs-extra": "8.1.0",
+    "midi-file": "^1.1.2"
   },
   "devDependencies": {
     "typescript": "3.6.4",

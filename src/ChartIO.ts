@@ -1,13 +1,28 @@
 import * as fse from 'fs-extra'
+import * as _path from 'path'
 import { ChartSync } from './ChartSync'
 import { ChartEvent } from './ChartEvent'
 import { Chart, ChartTrackData } from './Chart'
+import { MidiChart } from './MidiChart'
 
 export class ChartIO
 {
+    static moonscraper_style: boolean = true;
+
     static async load(path: string): Promise<Chart>
     {
-        return ChartIO.parse(await fse.readFile(path, 'utf-8'));
+        let ext = _path.extname(path).toLowerCase();
+
+        if (ext == '.mid')
+            return MidiChart.load(path);
+        else if (ext == '.chart')
+            return ChartIO.parse(await fse.readFile(path, 'utf-8'));
+        else if (await fse.pathExists(path + '.chart'))
+            return this.load(path + '.chart');
+        else if (await fse.pathExists(path + '.mid'))
+            return this.load(path + '.mid');
+
+        throw new Error(`Could not find suitable chart for "${path}"`);
     }
 
     static async save(chart: Chart, path: string): Promise<void>
@@ -112,7 +127,7 @@ export class ChartIO
         if (chart.Song.CountOff != undefined) str += `  CountOff = ${JSON.stringify(chart.Song.CountOff)}\n`;
         if (chart.Song.Offset != undefined) str += `  Offset = ${JSON.stringify(chart.Song.Offset)}\n`;
         if (chart.Song.Resolution != undefined) str += `  Resolution = ${JSON.stringify(chart.Song.Resolution)}\n`;
-        if (chart.Song.Player2 != undefined) str += `  Player2 = ${JSON.stringify(chart.Song.Player2)}\n`;
+        if (chart.Song.Player2 != undefined) str += `  Player2 = ${chart.Song.Player2}\n`;
         if (chart.Song.Difficulty != undefined) str += `  Difficulty = ${JSON.stringify(chart.Song.Difficulty)}\n`;
         if (chart.Song.PreviewStart != undefined) str += `  PreviewStart = ${JSON.stringify(chart.Song.PreviewStart)}\n`;
         if (chart.Song.PreviewEnd != undefined) str += `  PreviewEnd = ${JSON.stringify(chart.Song.PreviewEnd)}\n`;
@@ -156,7 +171,12 @@ export class ChartIO
             for (let ev of chart.ExpertSingle[k])
             {
                 if (ev.type == "N")
-                    str += `  ${k} = N ${ev.touch} ${ev.duration}\n`;
+                {
+                    if (ChartIO.moonscraper_style && ev.touch == 5)
+                        str += `  ${k} = N ${ev.touch} ${ev.duration} \n`;
+                    else
+                        str += `  ${k} = N ${ev.touch} ${ev.duration}\n`;
+                }
                 else if (ev.type == "E")
                     str += `  ${k} = E ${ev.name}\n`;
                 else if (ev.type == "S")

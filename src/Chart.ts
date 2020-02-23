@@ -13,6 +13,15 @@ export class Chart {
     Events: ChartTrack<ChartEvent> = {};
     ExpertSingle: ChartTrack<ChartTrackData> = {};
 
+    pushTrackData<T>(track: ChartTrack<T>, time: number, data: T)
+    {
+        let elt = track[time];
+        if (elt)
+            elt.push(data);
+        else
+            track[time] = [data];
+    }
+
     filterTrack<T>(track: ChartTrack<T>, callbackfn: (value: T[], index: number) => boolean): ChartTrack<T>
     {
         return Object.fromEntries(Object.entries(track).filter(ent => callbackfn(ent[1], parseInt(ent[0]))));

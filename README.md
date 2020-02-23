@@ -1,7 +1,7 @@
 Node.js: herochartio
 =================
 
-`herochartio` a chart parser and serializer from clone hero. This includes types for typescript and few helpers.
+`herochartio` a chart parser and serializer from clone hero. This includes types for typescript and few helpers. This also supports mid charts parsing.
 
 Installation
 ------------
@@ -16,8 +16,7 @@ import { ChartIO } from 'herochartio'
 ```
 
 ```js
-let chart = await ChartIO.load("./guitar.chart");
-// or = ChartIO.parse(fs.readFileSync('./guitar.chart', 'utf-8'))
+let chart = await ChartIO.load("./notes"); // load .chart or .mid
 
 let sectionPosition = chart.findSectionPosition("Guitar solo");
 let sectionTime = chart.positionToSeconds(sectionPosition);
