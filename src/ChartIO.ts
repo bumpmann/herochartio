@@ -4,19 +4,22 @@ import { ChartSync } from './ChartSync'
 import { ChartEvent } from './ChartEvent'
 import { Chart, ChartTrackData } from './Chart'
 import { MidiChart } from './MidiChart'
+import { ChartOptions } from './ChartOptions'
 
 export class ChartIO
 {
     static moonscraper_style: boolean = true;
 
-    static async load(path: string): Promise<Chart>
+    static async load(path: string, options?: ChartOptions): Promise<Chart>
     {
         let ext = _path.extname(path).toLowerCase();
+
+        MidiChart.silent = !!options && options.silent;
 
         if (ext == '.mid')
             return MidiChart.load(path);
         else if (ext == '.chart')
-            return ChartIO.parse(await fse.readFile(path, 'utf-8'));
+            return ChartIO.parse(await fse.readFile(path, 'utf-8'), options);
         else if (await fse.pathExists(path + '.chart'))
             return this.load(path + '.chart');
         else if (await fse.pathExists(path + '.mid'))
@@ -31,9 +34,9 @@ export class ChartIO
         return fse.writeFile(path, str, 'utf-8');
     }
 
-    static parse(content: string): Chart
+    static parse(content: string, options?: ChartOptions): Chart
     {
-        let obj = ChartIO.chartToObject(content);
+        let obj = ChartIO.chartToObject(content, options);
         let chart: Chart = new Chart();
 
         if (obj.Song.Name != undefined) chart.Song.Name = obj.Song.Name[0];
@@ -82,33 +85,43 @@ export class ChartIO
             }) as ChartEvent[];
         }
 
-        for (let ts in obj.ExpertSingle)
+        for (let instrument of ['Single', 'DoubleBass', 'Drums'])
         {
-            chart.ExpertSingle[parseInt(ts)] = obj.ExpertSingle[ts].map((o: any) => {
-                if (o[0] == 'N')
+            for (let trackName of ['Expert' + instrument, 'Hard' + instrument, 'Medium' + instrument, 'Easy' + instrument])
+            {
+                if (! obj[trackName])
+                    continue;
+                for (let ts in obj[trackName])
                 {
-                    return {
-                        type: 'N',
-                        touch: o[1],
-                        duration: o[2],
-                    };
+                    if (! chart.tracks[trackName])
+                        chart.tracks[trackName] = {};
+                    chart.tracks[trackName][parseInt(ts)] = obj[trackName][ts].map((o: any) => {
+                        if (o[0] == 'N')
+                        {
+                            return {
+                                type: 'N',
+                                touch: o[1],
+                                duration: o[2],
+                            };
+                        }
+                        else if (o[0] == 'E')
+                        {
+                            return {
+                                type: 'E',
+                                name: o[1]
+                            };
+                        }
+                        else if (o[0] == 'S')
+                        {
+                            return {
+                                type: 'S',
+                                value: o[1],
+                                duration: o[2],
+                            };
+                        }
+                    }) as ChartTrackData[];
                 }
-                else if (o[0] == 'E')
-                {
-                    return {
-                        type: 'E',
-                        name: o[1]
-                    };
-                }
-                else if (o[0] == 'S')
-                {
-                    return {
-                        type: 'S',
-                        value: o[1],
-                        duration: o[2],
-                    };
-                }
-            }) as ChartTrackData[];
+            }
         }
 
         return chart;
@@ -164,31 +177,34 @@ export class ChartIO
             }
         }
         str += "}\n";
-        str += "[ExpertSingle]\n";
-        str += "{\n";
-        for (let k in chart.ExpertSingle)
+        for (let trackName in chart.tracks)
         {
-            for (let ev of chart.ExpertSingle[k])
+            str += `[${trackName}]\n`;
+            str += "{\n";
+            for (let k in chart.tracks[trackName])
             {
-                if (ev.type == "N")
+                for (let ev of chart.tracks[trackName][k])
                 {
-                    if (ChartIO.moonscraper_style && ev.touch == 5)
-                        str += `  ${k} = N ${ev.touch} ${ev.duration} \n`;
-                    else
-                        str += `  ${k} = N ${ev.touch} ${ev.duration}\n`;
+                    if (ev.type == "N")
+                    {
+                        if (ChartIO.moonscraper_style && ev.touch == 5)
+                            str += `  ${k} = N ${ev.touch} ${ev.duration} \n`;
+                        else
+                            str += `  ${k} = N ${ev.touch} ${ev.duration}\n`;
+                    }
+                    else if (ev.type == "E")
+                        str += `  ${k} = E ${ev.name}\n`;
+                    else if (ev.type == "S")
+                        str += `  ${k} = S ${ev.value} ${ev.duration}\n`;
                 }
-                else if (ev.type == "E")
-                    str += `  ${k} = E ${ev.name}\n`;
-                else if (ev.type == "S")
-                    str += `  ${k} = S ${ev.value} ${ev.duration}\n`;
             }
+            str += "}\n";
         }
-        str += "}\n";
 
         return str;
     }
 
-    private static chartToObject(content: string): any
+    private static chartToObject(content: string, options?: ChartOptions): any
     {
         let str = content.replace(/\r/g, '').trimStart();
         str = str.replace(/\[(.*)\]\n/g, '"$1":\n');
@@ -228,7 +244,7 @@ export class ChartIO
             let match = e.message.match(/at position ([0-9]+)/);
             if (match)
             {
-                console.log("near `" + str.substr(match[1] - 40, 40) + " <--- ERROR " + str.substr(match[1], 40) + "`");
+                if (!options || !options.silent) console.log("near `" + str.substr(match[1] - 40, 40) + " <--- ERROR " + str.substr(match[1], 40) + "`");
             }
             throw e;
         }
